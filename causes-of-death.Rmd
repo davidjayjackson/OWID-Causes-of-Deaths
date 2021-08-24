@@ -1,0 +1,107 @@
+---
+title: "Causes of Deaths by Country"
+author: "David Jackson"
+date: "8/16/2021"
+output: 
+  html_document: 
+    fig_width: 9
+    fig_height: 7
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(janitor)
+library(scales)
+library(dlookr)
+```
+
+## Our World In Data
+
+* Data Source: http://ourwoldindata.org
+
+```{r}
+cause_of_death <- read.csv("./annual-number-of-deaths-by-cause.csv")
+```
+```{r}
+cause_of_death <- cause_of_death %>% select(-Code)
+
+cause_of_death$Executions <- as.numeric(cause_of_death$Executions)
+
+cause_longer <- cause_of_death %>% pivot_longer(cols=Executions:Poisonings,names_to = "Cause",values_to = "Deaths")
+```
+
+### Summary of Deaths Worldwide by Year
+
+```{r}
+cause_world <-cause_longer %>% filter(Country =="World")
+
+cause_world$Cause <- as.factor(cause_world$Cause)
+summary(cause_world)
+```
+```{r}
+cause_world %>% filter(Deaths >=2000000) %>%
+ggplot() + geom_line(aes(x=Year,y=Deaths,col=Cause))  +
+  scale_y_continuous(labels = comma) +
+  labs(title = "Number of Deaths by Cause and Year",subtitle = "( Deaths >=2,000,000)")
+  
+```
+```{r}
+cause_world %>% filter(Deaths <=400000) %>%
+ggplot() + geom_line(aes(x=Year,y=Deaths,col=Cause))  +
+  scale_y_continuous(labels = comma) +
+  labs(title = "Number of Deaths by Cause and Year",subtitle = "( Deaths < 400000)")
+  
+```
+
+```{r}
+cause_world %>% filter(Year == 2017) %>% top_n(10) %>%
+ggplot() + geom_col(aes(reorder(x=Cause,Deaths),y=Deaths))  +
+  scale_y_continuous(labels = comma) + coord_flip() +
+  labs(title = "Worldwide: Top 10 Causes of Death for 2017")
+
+  
+```
+## US Deahs by Cause (2017)
+
+```{r}
+cause_longer %>% filter(Country =="United States" ) %>%
+  ggplot(aes(x=Year,y=Deaths,col=Cause)) + geom_line()
+```
+### Alzheimer By Year
+
+```{r}
+cause_of_death %>% group_by(Year) %>%
+  summarise(Total = mean(Cardiovascular))
+```
+```{r}
+cause_of_death %>% filter(Country =="United States") %>% ggplot() + geom_line(aes(x=Year, y=Alzheimer,col="Alzheimer"),lwd=1) + scale_y_continuous(labels = comma) + labs(title = "US Deaths by Cause") +
+  geom_line(aes(x=Year,y=Cardiovascular,col="Cardiovascular"),lwd=1) +
+  geom_line(aes(x=Year,y=Neoplasms,col="Neoplasms"),lwd=1)
+```
+
+#### US Deaths by Cause: 2017
+
+```{r}
+cause_longer %>% filter(Country =="United States" & Year==2017) %>% top_n(10) %>% ggplot() + geom_col(aes(x=reorder(Cause,Deaths),y=Deaths)) +
+  coord_flip() + labs(title = "US Top 10 Cause of Death: 2017",
+                      x="Cause of Death",y="Number of Deaths") +
+  scale_y_continuous(labels= comma)
+```
+
+#### US Deaths by Cause: 2007
+
+```{r}
+cause_longer %>% filter(Country =="United States" & Year==2007) %>% top_n(10) %>% ggplot() + geom_col(aes(x=reorder(Cause,Deaths),y=Deaths)) +
+  coord_flip() + labs(title = "US Top 10 Cause of Death: 2007", x="Cause of Death",y="Number of Deaths") +   scale_y_continuous(labels= comma)
+```
+
+#### US Deaths by Cause: 1997
+
+```{r}
+cause_longer %>% filter(Country =="United States" & Year==1997) %>% top_n(10) %>% ggplot() + geom_col(aes(x=reorder(Cause,Deaths),y=Deaths)) +
+  coord_flip() + labs(title = "US Top 10 Cause of Death: 1997", x="Cause of Death",y="Number of Deaths") +   scale_y_continuous(labels= comma)
+```
+
+
+### Come back to group_by and try sum(Cardiovascular, na.rm = TRUE)
